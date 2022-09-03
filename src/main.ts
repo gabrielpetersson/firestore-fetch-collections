@@ -13,10 +13,14 @@ const collectionNames: string[] = collections.map(
   (collection) => collection.id,
 );
 
-const tableMap: Record<string, any[]> = {};
+type Scalar = string | number | boolean | null; // dataland support only scalar data types
+type ColumnName = string;
+type TableName = string;
+type Row = Record<ColumnName, Scalar>;
+const tableMap: Record<TableName, Row[]> = {};
 for (const collectionName of collectionNames) {
   const collectionRef = db.collection(collectionName);
-  const rows: any[] = [];
+  const rows: Row[] = [];
   const snapshot = await collectionRef.get();
 
   snapshot.forEach(async (doc) => {
@@ -26,23 +30,23 @@ for (const collectionName of collectionNames) {
     //   (collection) => collection.id,
     // );
 
+    const row: Row = {};
     const docData = doc.data();
-    const parsedData = {};
     for (const docKey in docData) {
       const docValue = docData[docKey];
 
-      let parsedValue: string;
+      let parsedValue: Scalar;
       if (docValue instanceof DocumentReference) {
-        parsedValue = docValue.path;
+        parsedValue = docValue.path; // if reference to another document, show the path to that document
       } else if (docValue != null && typeof docValue === 'object') {
         parsedValue = JSON.stringify(docValue);
       } else {
         parsedValue = docValue;
       }
-      parsedData[docKey] = parsedValue;
+      row[docKey] = parsedValue;
     }
 
-    rows.push(parsedData);
+    rows.push(row);
   });
 
   tableMap[collectionName] = rows;
